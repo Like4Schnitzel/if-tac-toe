@@ -1,2 +1,2 @@
 # if-tac-toe
-Tic-tac-toe written entirely with if statements.
+A generator for tic-tac-toe C code written entirely with if statements.
