@@ -3,6 +3,7 @@
 #include <string>
 #include <ctime>
 #include <chrono>
+#include <array>
 
 using namespace std;
 
@@ -10,22 +11,22 @@ string formattedString(string unformatted)
 {
     string formatted = "";
 
-    for (int i = 0; i < unformatted.size(); i++)
+    for (char c : unformatted)
     {
-        if (unformatted[i] == '\n')
+        if (c == '\n')
         {
             formatted += "\\n";
         }
         else
         {
-            formatted += unformatted[i];
+            formatted += c;
         }
     }
 
     return formatted;
 }
 
-string boardToString(char **board)
+string boardToString(std::array<std::array<char, 3>, 3> board)
 {
     string fancyBoard = "";
     for (int i = 0; i < 3; i++)
@@ -41,22 +42,28 @@ string boardToString(char **board)
     return fancyBoard;
 }
 
-char** duplicateBoard(char** board)
+bool checkDraw(std::array<std::array<char, 3>, 3> board)
 {
-    char** duplicate = new char* [3];
     for (int i = 0; i < 3; i++)
     {
-        duplicate[i] = new char [3];
         for (int j = 0; j < 3; j++)
         {
-            duplicate[i][j] = board[i][j];
+            if (board[i][j] <= '9')
+            {
+                return false;
+            }
         }
     }
-    return duplicate;
+
+    return true;
 }
 
-char winState(char** board)
+enum class WinState {XWin, OWin, Draw, Unfinished};
+
+WinState winState(std::array<std::array<char, 3>, 3> board)
 {
+    if (checkDraw(board)) return WinState::Draw;
+
     char c;
     for (int i = 0; i < 2; i++)
     {
@@ -71,16 +78,24 @@ char winState(char** board)
             (board[0][0] == c && board[1][1] == c && board[2][2] == c) ||
             (board[2][0] == c && board[1][1] == c && board[0][2] == c))
         {
-            return c;
+            if (c == 'X')
+            {
+                return WinState::XWin;
+            }
+            else
+            {
+                return WinState::OWin;
+            }
         }
     }
-    return '0';
+    return WinState::Unfinished;
 }
 
-string exploreTree(char** board, int x, int y, string tab, char piece, string originalTab, string printFunction)
+string exploreTree(std::array<std::array<char, 3>, 3> board, int x, int y, string tab, char piece, string originalTab, string printFunction)
 {
+    const string newTab = tab + originalTab;
+    const int index = 3*x+y+1;
     string dontLookAtThis = "";
-    int index = 3*x+y+1;
 
     //cout << boardToString(board) << '\n';
 
@@ -95,10 +110,9 @@ string exploreTree(char** board, int x, int y, string tab, char piece, string or
 
     board[x][y] = piece;
 
-    string newTab = tab + originalTab;
-    char winner = winState(board);
+    WinState winner = winState(board);
 
-    if (winner <= '9')
+    if (winner == WinState::Unfinished)
     {
         dontLookAtThis += newTab + printFunction+ "(\"" + formattedString(boardToString(board)) + "Player " + (piece == 'X' ? 'O' : 'X') + ", enter the number of the spot you want to set your symbol at: \");\n" + newTab;
         dontLookAtThis += "scanf(\"%d\", &move);\n";
@@ -107,21 +121,26 @@ string exploreTree(char** board, int x, int y, string tab, char piece, string or
         {
             for (int j = 0; j < 3; j++)
             {
-                dontLookAtThis += exploreTree(duplicateBoard(board), i, j, newTab, piece == 'X' ? 'O' : 'X', originalTab, printFunction);
+                dontLookAtThis += exploreTree(board, i, j, newTab, piece == 'X' ? 'O' : 'X', originalTab, printFunction);
             }
         }
-        dontLookAtThis += tab + "}\n";
 
-        if (index == 9)
-        {
-            dontLookAtThis += "\n" + tab + "else\n" + tab + "{\n" + newTab + printFunction + "(\"Invalid move, you suck at this game, try again.\\n\");\n";
-            dontLookAtThis += newTab + "return 0;\n" + tab + "}\n";
-        }
+        dontLookAtThis += newTab + "else\n" + newTab + "{\n" + newTab + originalTab + printFunction + "(\"Invalid move, you suck at this game, try again.\\n\");\n";
+        dontLookAtThis += newTab + originalTab + "return 0;\n" + newTab + "}\n";
+        dontLookAtThis += tab + "}\n";
 
         return dontLookAtThis;
     }
 
-    dontLookAtThis += newTab + printFunction + "(\"" + winner + " wins!\\n\");\n" + newTab + "return 0;\n" + tab + "}\n";
+    if (winner == WinState::Draw)
+    {
+        dontLookAtThis += newTab + printFunction + "(\"Draw!\\n\");\n" + newTab + "return 0;\n" + tab + "}\n";
+    }
+    else
+    {
+        dontLookAtThis += newTab + printFunction + "(\"" + (winner == WinState::XWin ? 'X' : 'O') + " wins!\\n\");\n" + newTab + "return 0;\n" + tab + "}\n";
+    }
+
     return dontLookAtThis;
 }
 
@@ -133,10 +152,9 @@ string beginExploring(int tabLength)
         tab += ' ';
     }
 
-    char** board = new char* [3];
+    std::array<std::array<char, 3>, 3> board;
     for (int i = 0; i < 3; i++)
     {
-        board[i] = new char [3];
         for (int j = 0; j < 3; j++)
         {
             board[i][j] = (char) (3*i+j) + '1';
@@ -152,7 +170,7 @@ string beginExploring(int tabLength)
     {
         for (int j = 0; j < 3; j++)
         {
-            terribleCode += exploreTree(duplicateBoard(board), i, j, tab, 'X', tab, "printf");
+            terribleCode += exploreTree(board, i, j, tab, 'X', tab, "printf");
         }
     }
 
