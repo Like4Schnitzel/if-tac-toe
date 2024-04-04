@@ -132,14 +132,16 @@ string exploreTree(std::array<std::array<char, 3>, 3> board, int x, int y, strin
         return dontLookAtThis;
     }
 
+    dontLookAtThis += newTab + printFunction + "(\"" + formattedString(boardToString(board)) + "\");\n";
     if (winner == WinState::Draw)
     {
-        dontLookAtThis += newTab + printFunction + "(\"Draw!\\n\");\n" + newTab + "return 0;\n" + tab + "}\n";
+        dontLookAtThis += newTab + printFunction + "(\"Draw!\\n\");\n";
     }
     else
     {
-        dontLookAtThis += newTab + printFunction + "(\"" + (winner == WinState::XWin ? 'X' : 'O') + " wins!\\n\");\n" + newTab + "return 0;\n" + tab + "}\n";
+        dontLookAtThis += newTab + printFunction + "(\"" + (winner == WinState::XWin ? 'X' : 'O') + " wins!\\n\");\n";
     }
+    dontLookAtThis += newTab + "return 0;\n" + tab + "}\n";
 
     return dontLookAtThis;
 }
